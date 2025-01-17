@@ -1,10 +1,13 @@
 package org.example.carrent.service;
 
+import jakarta.transaction.Transactional;
 import org.example.carrent.dto.CustomerDTO;
 import org.example.carrent.entity.Customer;
 import org.example.carrent.exception.ResourceNotFoundException;
 import org.example.carrent.mapper.CustomerMapper;
 import org.example.carrent.repository.CustomerRepository;
+import org.example.carrent.repository.PaymentRepository;
+import org.example.carrent.repository.RentalRepository;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
@@ -18,10 +21,18 @@ import java.util.stream.Collectors;
 public class CustomerServiceImpl implements CustomerService {
     private final CustomerRepository customerRepository;
     private final CustomerMapper customerMapper;
+    private final PaymentRepository paymentRepository;
+    private final RentalRepository  rentalRepository;
 
-    public CustomerServiceImpl(CustomerRepository customerRepository,CustomerMapper customerMapper) {
+    public CustomerServiceImpl(
+            CustomerRepository customerRepository,
+            CustomerMapper customerMapper,
+            PaymentRepository paymentRepository, RentalRepository rentalRepository
+    ) {
         this.customerRepository = customerRepository;
         this.customerMapper = customerMapper;
+        this.paymentRepository = paymentRepository;
+        this.rentalRepository = rentalRepository;
     }
 
     @Override
@@ -59,6 +70,70 @@ public class CustomerServiceImpl implements CustomerService {
         customerRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Customer with id " + id + " not found"));
         customerRepository.deleteById(id);
     }
+
+
+    @Override
+    @Transactional
+    public void deleteCustomerByKeycloakId(UUID keycloakId) {
+        Optional<Customer> optionalCustomer = customerRepository.findByKeycloakId(keycloakId);
+        if (optionalCustomer.isEmpty()) {
+            return;
+        }
+
+        Customer customer = optionalCustomer.get();
+
+
+        rentalRepository.deleteAllByCustomerId(customer.getId());
+        paymentRepository.deleteAllByCustomerId(customer.getId());
+
+
+
+        customerRepository.delete(customer);
+    }
+
+
+    @Override
+    @Transactional
+    public CustomerDTO updateCustomerByKeycloakId(CustomerDTO customerDTO) {
+        if (customerDTO.getKeycloakId() == null) {
+            throw new ResourceNotFoundException("Keycloak ID cannot be null for update.");
+        }
+
+        UUID keycloakUUID = customerDTO.getKeycloakId();
+        Customer existingCustomer = customerRepository.findByKeycloakId(keycloakUUID)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Customer with keycloakId " + customerDTO.getKeycloakId() + " not found"
+                ));
+
+
+        if (customerDTO.getFirstName() != null) {
+            existingCustomer.setFirstName(customerDTO.getFirstName());
+        }
+        if (customerDTO.getLastName() != null) {
+            existingCustomer.setLastName(customerDTO.getLastName());
+        }
+        if (customerDTO.getEmail() != null) {
+            existingCustomer.setEmail(customerDTO.getEmail());
+        }
+
+        if (customerDTO.getPhoneNumber() != null) {
+            existingCustomer.setPhoneNumber(customerDTO.getPhoneNumber());
+        }
+
+        if (customerDTO.getBirthDate() != null) {
+            existingCustomer.setBirthDate(customerDTO.getBirthDate());
+        }
+
+
+
+        Customer savedCustomer = customerRepository.save(existingCustomer);
+
+
+        return customerMapper.toDto(savedCustomer);
+    }
+
+
+
 
     @Override
     public CustomerDTO getCustomerByToken(Jwt principal) {
