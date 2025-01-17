@@ -68,6 +68,13 @@ public class RentalController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdRental);
     }
 
+    @PostMapping("/add")
+    public ResponseEntity<RentalDTO> addRental(@RequestBody RentalDTO rentalRequest) {
+
+        RentalDTO createdRental = rentalService.addRental(rentalRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdRental);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<RentalDTO> getRentalById(@PathVariable Long id) {
         RentalDTO rentalDTO = rentalService.findRentalById(id);
