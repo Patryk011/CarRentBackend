@@ -47,6 +47,10 @@
         <artifactId>keycloak-core</artifactId>
         <version>26.0.0</version>
     </dependency>
+    <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging</artifactId>
+    </dependency>
 </dependencies>
 
 <build>
