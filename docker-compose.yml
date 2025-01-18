@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 services:
   spring-backend:
     build:
@@ -21,6 +21,8 @@ services:
       - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true
     depends_on:
       - keycloak-local.pl
+    networks:
+      - ISI-NETWORK
 
   keycloak-local.pl:
     image: quay.io/keycloak/keycloak:latest
@@ -46,3 +48,8 @@ services:
       - ./providers:/opt/keycloak/providers
     command: start-dev
     restart: unless-stopped
+    networks:
+      - ISI-NETWORK
+
+networks:
+  ISI-NETWORK:
